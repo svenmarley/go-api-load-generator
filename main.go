@@ -22,7 +22,7 @@ type inArgs struct {
 
 func main() {
 	sFunc := "main()-->"
-	//debug := false
+	debug := false
 
 	myArgs := getArgs()
 	fmt.Println("myArgs", myArgs)
@@ -30,21 +30,21 @@ func main() {
 	// create the workers
 	numWorkers := myArgs.numWorkers
 	numTries := myArgs.numTries
-	desiredRPS := myArgs.desiredRPS
 	results := make(chan map[string]int, numWorkers*numTries)
 	resultTotals := make(map[int]map[string]int)
-	maxRPS := 0.0
 
 	for i := 0; i < numWorkers; i++ {
 		go worker(i, myArgs, results)
 	}
 
 	// log workers output
+	startTime := time.Now()
+	completedWorkers := 0
 	totalGood := 0
 	totalBad := 0
 	currentRPS := 0.0
-	startTime := time.Now()
-	completedWorkers := 0
+	maxRPS := 0.0
+	desiredRPS := myArgs.desiredRPS
 
 	for {
 		val, ok := <-results
@@ -56,11 +56,14 @@ func main() {
 
 			currentRPS = float64(totalGood) / duration.Seconds()
 			maxRPS = math.Max(maxRPS, currentRPS)
-			fmt.Println(sFunc+"val: ", fmt.Sprintf("workerId: %4d bad:%4d good:%4d", val["workerId"], val["bad"], val["good"]),
-				"seconds run", fmt.Sprintf("%.2f", duration.Seconds()),
-				"  desiredRPS", desiredRPS,
-				"currentRPS", fmt.Sprintf("%.2f", currentRPS),
-			)
+			if debug {
+				fmt.Println(sFunc+"val: ", fmt.Sprintf("workerId: %4d bad:%4d good:%4d", val["workerId"], val["bad"], val["good"]),
+					"seconds run", fmt.Sprintf("%.2f", duration.Seconds()),
+					"  desiredRPS", desiredRPS,
+					"currentRPS", fmt.Sprintf("%.2f", currentRPS),
+				)
+			}
+			showResults(totalBad, totalGood, currentRPS, desiredRPS, maxRPS)
 
 		} else {
 			fmt.Println(sFunc + "worker done")
@@ -75,7 +78,12 @@ func main() {
 	}
 
 	// report the results
-	fmt.Println(sFunc+"Done",
+	showResults(totalBad, totalGood, currentRPS, desiredRPS, maxRPS)
+
+}
+
+func showResults(totalBad int, totalGood int, currentRPS float64, desiredRPS int, maxRPS float64) {
+	fmt.Println("Done",
 		", totalBad:", totalBad,
 		", totalGood:", totalGood,
 		", last RPS:", fmt.Sprintf("%.2f", currentRPS),

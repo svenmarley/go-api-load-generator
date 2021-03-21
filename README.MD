@@ -21,6 +21,8 @@ Done with `num_workers=150 num_tries=100`.
 
 
 ## Installation
+Clone this repo
+
 With Go installed, the only required is the main.go file in this repository.
 
 ## Run

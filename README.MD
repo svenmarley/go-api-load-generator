@@ -1,10 +1,10 @@
-#Go - Api Load Generator
+# Go - Api Load Generator
 
 This is an assessment application I was asked to complete.  I have never written a Go application, so this is my first.  The initial commit took about 6 hours.
 
 I chose Go to do this application because I felt being able to create sub-tasks easily was paramount to performance for this application, and go is very good (and it was easy) to do that.
 
-####Notes:
+#### Notes:
 * The only request that is supported is HTTP GET
 * Currently, it just checks for HTTP request status code of 200 as success, anything else is flagged as an error.
 

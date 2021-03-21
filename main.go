@@ -17,7 +17,7 @@ type inArgs struct {
 	authorization string
 	desiredRPS    int
 	numWorkers    int
-	numChildren   int
+	numTries      int
 }
 
 func main() {
@@ -29,9 +29,9 @@ func main() {
 
 	// create the workers
 	numWorkers := myArgs.numWorkers
-	numChildren := myArgs.numChildren
+	numTries := myArgs.numTries
 	desiredRPS := myArgs.desiredRPS
-	results := make(chan map[string]int, numWorkers*numChildren)
+	results := make(chan map[string]int, numWorkers*numTries)
 	resultTotals := make(map[int]map[string]int)
 	maxRPS := 0.0
 
@@ -56,7 +56,7 @@ func main() {
 
 			currentRPS = float64(totalGood) / duration.Seconds()
 			maxRPS = math.Max(maxRPS, currentRPS)
-			fmt.Println(sFunc+"val: ", fmt.Sprintf("workerId: %d bad:%d good:%d", val["workerId"], val["bad"], val["good"]),
+			fmt.Println(sFunc+"val: ", fmt.Sprintf("workerId: %4d bad:%4d good:%4d", val["workerId"], val["bad"], val["good"]),
 				"seconds run", fmt.Sprintf("%.2f", duration.Seconds()),
 				"  desiredRPS", desiredRPS,
 				"currentRPS", fmt.Sprintf("%.2f", currentRPS),
@@ -129,22 +129,22 @@ func worker(workerId int, myArgs inArgs, results chan<- map[string]int) {
 	AuthHeaderValue := ""
 
 	fullPath := myArgs.hostName + myArgs.hostPath
-	numChildren := myArgs.numChildren
+	numTries := myArgs.numTries
 	if len(myArgs.authorization) > 0 {
 		auths := strings.SplitN(myArgs.authorization, ":", 2)
 		AuthHeaderKey, AuthHeaderValue = auths[0], auths[1]
 	}
 
 	if debug {
-		fmt.Println(sFunc+"workerId", workerId, "numChildren", numChildren)
+		fmt.Println(sFunc+"workerId", workerId, "numTries", numTries)
 		fmt.Println(sFunc+"myArgs", myArgs)
 		fmt.Println(sFunc+"auths  key", AuthHeaderKey, "value", AuthHeaderValue)
 	}
 
-	for x := 0; x < numChildren; x++ {
-		client := &http.Client{} // todo: move this outside the loop for speed?
+	for x := 0; x < numTries; x++ {
+		client := &http.Client{}
 		if debug {
-			fmt.Println(sFunc+"workerId", workerId, "child", x, "fullPath", fullPath)
+			fmt.Println(sFunc+"workerId", workerId, "try", x, "fullPath", fullPath)
 		}
 
 		req, _ := http.NewRequest("GET", fullPath, nil)
@@ -154,15 +154,15 @@ func worker(workerId int, myArgs inArgs, results chan<- map[string]int) {
 		resp, err := client.Do(req)
 
 		if err != nil {
-			fmt.Println(sFunc+"child", x, "err", err)
+			fmt.Println(sFunc+"try", x, "err", err)
 			bad++
-			panic(err)
+			//panic(err)
 		}
-		_ = resp.Body.Close() // todo: move this outside the loop for speed?
+		_ = resp.Body.Close()
 
 		good++
 		if debug {
-			fmt.Println(sFunc+"worker id", workerId, "child", x, "resp.status", resp.Status)
+			fmt.Println(sFunc+"worker id", workerId, "try", x, "resp.status", resp.Status)
 			scanner := bufio.NewScanner(resp.Body)
 			for i := 0; scanner.Scan() && i < 5; i++ {
 				fmt.Println(sFunc+"x", x, "i", strconv.Itoa(i), "text", scanner.Text())
@@ -191,7 +191,7 @@ func getArgs() inArgs {
 	authorization := flag.String("authorization", "", "Authorization header info. \"{key}:{value}\" ")
 	desiredRPS := flag.Int("desired_rps", 100, "Desired rate per second")
 	numWorkers := flag.Int("num_workers", 1, "Num workers to spawn")
-	numChildren := flag.Int("num_children", 1, "Num children per worker to spawn")
+	numTries := flag.Int("num_tries", 1, "Num tries per worker to spawn")
 
 	flag.Parse()
 
@@ -200,7 +200,7 @@ func getArgs() inArgs {
 	a.authorization = *authorization
 	a.desiredRPS = *desiredRPS
 	a.numWorkers = *numWorkers
-	a.numChildren = *numChildren
+	a.numTries = *numTries
 
 	if debug {
 		fmt.Println(sFunc+"returning", a)

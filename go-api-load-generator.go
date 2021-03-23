@@ -219,7 +219,7 @@ func worker(workerId int, myArgs inArgs, results chan<- map[string]int) {
 			fmt.Println(sFunc+"try", x, "err", err)
 			bad++
 		} else if resp.StatusCode != http.StatusOK {
-			fmt.Println(sFunc+"try", x, "http.statusCode", resp.StatusCode)//"resp.Body", resp.Body,
+			fmt.Println(sFunc+"try", x, "http.statusCode", resp.StatusCode) //"resp.Body", resp.Body,
 			//"resp.Header", resp.Header,
 
 		} else {
